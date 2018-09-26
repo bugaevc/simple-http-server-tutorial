@@ -16,6 +16,18 @@ def handle_request(request):
     return 404, '<html><body><font color="red">Not Found</font></body></html>'
 
 
+def parse_headers(raw_request):
+    headers = dict()
+    while True:
+        line = raw_request.pop(0)
+        if not line:
+            # reached the end of headers
+            break
+        name, colon, value = line.partition(': ')
+        headers[name] = value
+    return headers
+
+
 def handle_client(client):
     raw_request = client.recv(2048).decode().splitlines()
     request = Request()
@@ -24,14 +36,7 @@ def handle_client(client):
     request.method, request.path, request.http_version = first_line.split()
     request.http_version = request.http_version[len('HTTP/'):]
 
-    request.headers = dict()
-    while True:
-        line = raw_request.pop(0)
-        if not line:
-            # reached the end of headers
-            break
-        name, colon, value = line.partition(': ')
-        request.headers[name] = value
+    request.headers = parse_headers(raw_request)
 
     result = handle_request(request)
 
