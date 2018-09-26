@@ -21,7 +21,7 @@ def handle_request(request):
                 <title>To-do list</title>
             </head>
             <body>
-                Your to-do list:
+                <p>Your to-do list:</p>
                 <ul>
                     {}
                 </ul>
