@@ -25,11 +25,17 @@ def handle_request(request):
                 <ul>
                     {}
                 </ul>
+                <form action="/new" method="post">
+                    <p>Add a new item:</p>
+                    <input type="text" name="name" placeholder="Do stuff"/>
+                    <input type="submit" value="Add"/>
+                </form>
             </body>
         </html>'''.format('\n'.join('<li>' + item + '</li>' for item in todo_list))
 
     if request.path == '/new' and request.method == 'POST':
         new_todo = request.body.strip()
+        new_todo = new_todo[len("name="):].replace('+', ' ')
         todo_list.append(new_todo)
         return 201, '<html><body>Created! Go back to the <a href="/">frontpage</a>.</body></html>'
 
