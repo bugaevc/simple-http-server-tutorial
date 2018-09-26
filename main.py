@@ -10,6 +10,9 @@ class Request:
     pass
 
 
+todo_list = []
+
+
 def handle_request(request):
     if request.path == '/':
         return '''
@@ -20,11 +23,16 @@ def handle_request(request):
             <body>
                 Your to-do list:
                 <ul>
-                    <li>Do stuff</li>
-                    <li>Do more stuff</li>
+                    {}
                 </ul>
             </body>
-        </html>'''
+        </html>'''.format('\n'.join('<li>' + item + '</li>' for item in todo_list))
+
+    if request.path == '/new' and request.method == 'POST':
+        new_todo = request.body.strip()
+        todo_list.append(new_todo)
+        return 201, '<html><body>Created! Go back to the <a href="/">frontpage</a>.</body></html>'
+
     return 404, '<html><body><font color="red">Not Found</font></body></html>'
 
 
