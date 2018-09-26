@@ -12,7 +12,19 @@ class Request:
 
 def handle_request(request):
     if request.path == '/':
-        return '<html><body>Hello <i>World!</i></body></html>'
+        return '''
+        <html>
+            <head>
+                <title>To-do list</title>
+            </head>
+            <body>
+                Your to-do list:
+                <ul>
+                    <li>Do stuff</li>
+                    <li>Do more stuff</li>
+                </ul>
+            </body>
+        </html>'''
     return 404, '<html><body><font color="red">Not Found</font></body></html>'
 
 
