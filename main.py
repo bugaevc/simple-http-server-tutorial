@@ -7,4 +7,5 @@ s.listen()
 
 while True:
     s2, client_addr = s.accept()
-    print(s2, client_addr)
+    s2.send(b'hello world\n')
+    s2.close()
