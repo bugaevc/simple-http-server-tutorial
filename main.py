@@ -41,40 +41,45 @@ def parse_headers(raw_request):
 
 
 def handle_client(client):
-    raw_request = client.recv(2048).decode().splitlines()
-    request = Request()
-    first_line = raw_request.pop(0)
-    # METHOD /path HTTP/version
-    request.method, request.path, request.http_version = first_line.split()
-    request.http_version = request.http_version[len('HTTP/'):]
+    try:
+        raw_request = client.recv(2048).decode().splitlines()
+        request = Request()
+        first_line = raw_request.pop(0)
+        # METHOD /path HTTP/version
+        request.method, request.path, request.http_version = first_line.split()
+        request.http_version = request.http_version[len('HTTP/'):]
 
-    request.headers = parse_headers(raw_request)
+        request.headers = parse_headers(raw_request)
+        request.body = '\n'.join(raw_request)
 
-    result = handle_request(request)
+        result = handle_request(request)
 
-    if isinstance(result, str):
-        code = 200
-        body = result
-    else:
-        code, body = result
-    body = body.encode()
+        if isinstance(result, str):
+            code = 200
+            body = result
+        else:
+            code, body = result
+        body = body.encode()
 
-    code_name = {
-        200: 'OK',
-        201: 'Created',
-        404: 'Not Found'
-    }[code]
+        code_name = {
+            200: 'OK',
+            201: 'Created',
+            404: 'Not Found'
+        }[code]
 
-    client.send('HTTP/1.0 {} {}\r\n'.format(code, code_name).encode())
+        client.send('HTTP/1.0 {} {}\r\n'.format(code, code_name).encode())
 
-    client.send(b'Server: Simple HTTP server 0.1\r\n')
-    client.send(b'Content-Type: text/html\r\n')
-    client.send('Content-Length: {}\r\n'.format(len(body)).encode())
+        client.send(b'Server: Simple HTTP server 0.1\r\n')
+        client.send(b'Content-Type: text/html\r\n')
+        client.send('Content-Length: {}\r\n'.format(len(body)).encode())
 
-    client.send(b'\r\n')
-    client.send(body)
-
-    client.close()
+        client.send(b'\r\n')
+        client.send(body)
+    except:
+        client.send(b'HTTP/1.0 500 Internal Server Error\r\n')
+        client.send(b'\r\n')
+    finally:
+        client.close()
 
 
 while True:
