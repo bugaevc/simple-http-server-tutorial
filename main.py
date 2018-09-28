@@ -26,13 +26,16 @@ while True:
 
     if path == '/':
         code = 200
-        code_name = 'OK'
         body = '<html><body>Hello <i>World!</i></body></html>'
     else:
         code = 404
-        code_name = 'Not Found'
         body = '<html><body><font color="red">Not Found</font></body></html>'
     body = body.encode()
+
+    code_name = {
+        200: 'OK',
+        404: 'Not Found'
+    }[code]
 
     s2.send('HTTP/1.0 {} {}\r\n'.format(code, code_name).encode())
 
