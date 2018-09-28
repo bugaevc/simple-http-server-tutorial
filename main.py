@@ -17,16 +17,16 @@ while True:
     if path == '/':
         code = 200
         code_name = 'OK'
-        body = 'hello world!'
+        body = '<html><body>Hello <i>World!</i></body></html>'
     else:
         code = 404
         code_name = 'Not Found'
-        body = 'not found'
+        body = '<html><body><font color="red">Not Found</font></body></html>'
 
     s2.send('HTTP/1.0 {} {}\r\n'.format(code, code_name).encode())
 
     s2.send(b'Server: Simple HTTP server 0.1\r\n')
-    s2.send(b'Content-Type: text/plain\r\n')
+    s2.send(b'Content-Type: text/html\r\n')
 
     s2.send(b'\r\n')
 
