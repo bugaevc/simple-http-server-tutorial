@@ -22,14 +22,16 @@ while True:
         code = 404
         code_name = 'Not Found'
         body = '<html><body><font color="red">Not Found</font></body></html>'
+    body = body.encode()
 
     s2.send('HTTP/1.0 {} {}\r\n'.format(code, code_name).encode())
 
     s2.send(b'Server: Simple HTTP server 0.1\r\n')
     s2.send(b'Content-Type: text/html\r\n')
+    s2.send('Content-Length: {}\r\n'.format(len(body)).encode())
 
     s2.send(b'\r\n')
 
-    s2.send(body.encode())
+    s2.send(body)
 
     s2.close()
