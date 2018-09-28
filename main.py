@@ -18,9 +18,9 @@ class Handler:
 
 
 class Server:
-    def __init__(self):
+    def __init__(self, host='127.0.0.1', port=80):
         self.s = socket.socket()
-        server_addr = '127.0.0.1', 8000
+        server_addr = host, port
         self.s.bind(server_addr)
         self.handlers = []
 
@@ -153,7 +153,7 @@ class FourOhFourHandler(Handler):
         return 404, '<html><body><font color="red">Not Found</font></body></html>'
 
 
-server = Server()
+server = Server(port=8000)
 todo_list = ToDo()
 
 server.add_handler(RootHandler(todo_list))
