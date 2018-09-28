@@ -16,10 +16,8 @@ def handle_request(request):
     return 404, '<html><body><font color="red">Not Found</font></body></html>'
 
 
-while True:
-    s2, client_addr = s.accept()
-
-    raw_request = s2.recv(2048).decode().splitlines()
+def handle_client(client):
+    raw_request = client.recv(2048).decode().splitlines()
     request = Request()
     first_line = raw_request.pop(0)
     # METHOD /path HTTP/version
@@ -49,14 +47,18 @@ while True:
         404: 'Not Found'
     }[code]
 
-    s2.send('HTTP/1.0 {} {}\r\n'.format(code, code_name).encode())
+    client.send('HTTP/1.0 {} {}\r\n'.format(code, code_name).encode())
 
-    s2.send(b'Server: Simple HTTP server 0.1\r\n')
-    s2.send(b'Content-Type: text/html\r\n')
-    s2.send('Content-Length: {}\r\n'.format(len(body)).encode())
+    client.send(b'Server: Simple HTTP server 0.1\r\n')
+    client.send(b'Content-Type: text/html\r\n')
+    client.send('Content-Length: {}\r\n'.format(len(body)).encode())
 
-    s2.send(b'\r\n')
+    client.send(b'\r\n')
+    client.send(body)
 
-    s2.send(body)
+    client.close()
 
-    s2.close()
+
+while True:
+    s2, client_addr = s.accept()
+    handle_client(s2)
