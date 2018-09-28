@@ -27,6 +27,39 @@ class Server:
     def add_handler(self, handler):
         self.handlers.append(handler)
 
+    def get(self, path):
+        def decorator(f):
+            class DynamicHandler(Handler):
+                def can_handle(self, request):
+                    return request.method == 'GET' and request.path == path
+                def handle(self, request):
+                    return f(request)
+            self.handlers.append(DynamicHandler())
+            return f
+        return decorator
+
+    def post(self, path):
+        def decorator(f):
+            class DynamicHandler(Handler):
+                def can_handle(self, request):
+                    return request.method == 'POST' and request.path == path
+                def handle(self, request):
+                    return f(request)
+            self.handlers.append(DynamicHandler())
+            return f
+        return decorator
+
+    def any(self):
+        def decorator(f):
+            class DynamicHandler(Handler):
+                def can_handle(self, request):
+                    return True
+                def handle(self, request):
+                    return f(request)
+            self.handlers.append(DynamicHandler())
+            return f
+        return decorator
+
     def serve_forever(self):
         self.s.listen()
         while True:
@@ -110,6 +143,7 @@ class ClientHandler:
     def finish_headers(self):
         self.socket.send(b'\r\n')
 
+
 class ToDo:
     def __init__(self):
         self.list = []
@@ -125,58 +159,40 @@ class ToDo:
         self.list.append(item)
 
 
-class RootHandler(Handler):
-    def __init__(self, todo):
-        self.todo = todo
-
-    def can_handle(self, request):
-        return request.path == '/' and request.method == 'GET'
-
-    def handle(self, request):
-        return '''
-                <html>
-                    <head>
-                        <title>To-do list</title>
-                    </head>
-                    <body>
-                        <p>Your to-do list:</p>
-                        {}
-                        <form action="/new" method="post">
-                            <p>Add a new item:</p>
-                            <input type="text" name="name" placeholder="Do stuff"/>
-                            <input type="submit" value="Add"/>
-                        </form>
-                    </body>
-                </html>'''.format(self.todo.render_html())
-
-
-class NewHandler(Handler):
-    def __init__(self, todo):
-        self.todo = todo
-
-    def can_handle(self, request):
-        return request.path == '/new' and request.method == 'POST'
-
-    def handle(self, request):
-        new_todo = request.body.strip()
-        new_todo = new_todo[len("name="):].replace('+', ' ')
-        self.todo.add(new_todo)
-        return 201, '<html><body>Created! Go back to the <a href="/">frontpage</a>.</body></html>'
-
-
-class FourOhFourHandler(Handler):
-    def can_handle(self, request):
-        return True
-
-    def handle(self, request):
-        return 404, '<html><body><font color="red">Not Found</font></body></html>'
-
-
 server = Server(port=8000)
 todo_list = ToDo()
 
-server.add_handler(RootHandler(todo_list))
-server.add_handler(NewHandler(todo_list))
-server.add_handler(FourOhFourHandler())
+
+@server.get('/')
+def root(request):
+    return '''
+        <html>
+            <head>
+                <title>To-do list</title>
+            </head>
+            <body>
+                <p>Your to-do list:</p>
+                {}
+                <form action="/new" method="post">
+                    <p>Add a new item:</p>
+                    <input type="text" name="name" placeholder="Do stuff"/>
+                    <input type="submit" value="Add"/>
+                </form>
+            </body>
+        </html>'''.format(todo_list.render_html())
+
+
+@server.post('/new')
+def new(request):
+    new_todo = request.body.strip()
+    new_todo = new_todo[len("name="):].replace('+', ' ')
+    todo_list.add(new_todo)
+    return 201, '<html><body>Created! Go back to the <a href="/">frontpage</a>.</body></html>'
+
+
+@server.any()
+def not_found(request):
+    return 404, '<html><body><font color="red">Not Found</font></body></html>'
+
 
 server.serve_forever()
