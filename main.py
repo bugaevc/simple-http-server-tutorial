@@ -39,6 +39,12 @@ class Server:
             finally:
                 s2.close()
 
+    def send_header(self, client, name, value):
+        client.send('{}: {}\r\n'.format(name, value).encode())
+
+    def finish_headers(self, client):
+        client.send(b'\r\n')
+
     def handle_client(self, client):
         raw_request = client.recv(2048).decode().splitlines()
         request = Request()
@@ -67,11 +73,11 @@ class Server:
 
         client.send('HTTP/1.0 {} {}\r\n'.format(code, code_name).encode())
 
-        client.send(b'Server: Simple HTTP server 0.1\r\n')
-        client.send(b'Content-Type: text/html\r\n')
-        client.send('Content-Length: {}\r\n'.format(len(body)).encode())
+        self.send_header(client, 'Server', 'Simple HTTP server 0.1')
+        self.send_header(client, 'Content-Type', 'text/html')
+        self.send_header(client, 'Content-Length', len(body))
 
-        client.send(b'\r\n')
+        self.finish_headers(client)
         client.send(body)
 
     def parse_headers(self, raw_request):
