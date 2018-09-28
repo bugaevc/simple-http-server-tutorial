@@ -14,6 +14,16 @@ while True:
     method, path, http_version = first_line.split()
     http_version = http_version[len('HTTP/'):]
 
+    headers = dict()
+    while True:
+        line = request.pop(0)
+        if not line:
+            # reached the end of headers
+            break
+        name, colon, value = line.partition(': ')
+        headers[name] = value
+
+
     if path == '/':
         code = 200
         code_name = 'OK'
