@@ -5,6 +5,13 @@ server_addr = '127.0.0.1', 8000
 s.bind(server_addr)
 s.listen()
 
+
+def handle_request(path):
+    if path == '/':
+        return '<html><body>Hello <i>World!</i></body></html>'
+    return 404, '<html><body><font color="red">Not Found</font></body></html>'
+
+
 while True:
     s2, client_addr = s.accept()
 
@@ -23,13 +30,13 @@ while True:
         name, colon, value = line.partition(': ')
         headers[name] = value
 
+    result = handle_request(path)
 
-    if path == '/':
+    if isinstance(result, str):
         code = 200
-        body = '<html><body>Hello <i>World!</i></body></html>'
+        body = result
     else:
-        code = 404
-        body = '<html><body><font color="red">Not Found</font></body></html>'
+        code, body = result
     body = body.encode()
 
     code_name = {
