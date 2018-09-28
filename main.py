@@ -6,8 +6,12 @@ s.bind(server_addr)
 s.listen()
 
 
-def handle_request(path):
-    if path == '/':
+class Request:
+    pass
+
+
+def handle_request(request):
+    if request.path == '/':
         return '<html><body>Hello <i>World!</i></body></html>'
     return 404, '<html><body><font color="red">Not Found</font></body></html>'
 
@@ -15,22 +19,23 @@ def handle_request(path):
 while True:
     s2, client_addr = s.accept()
 
-    request = s2.recv(2048).decode().splitlines()
-    first_line = request.pop(0)
+    raw_request = s2.recv(2048).decode().splitlines()
+    request = Request()
+    first_line = raw_request.pop(0)
     # METHOD /path HTTP/version
-    method, path, http_version = first_line.split()
-    http_version = http_version[len('HTTP/'):]
+    request.method, request.path, request.http_version = first_line.split()
+    request.http_version = request.http_version[len('HTTP/'):]
 
-    headers = dict()
+    request.headers = dict()
     while True:
-        line = request.pop(0)
+        line = raw_request.pop(0)
         if not line:
             # reached the end of headers
             break
         name, colon, value = line.partition(': ')
-        headers[name] = value
+        request.headers[name] = value
 
-    result = handle_request(path)
+    result = handle_request(request)
 
     if isinstance(result, str):
         code = 200
