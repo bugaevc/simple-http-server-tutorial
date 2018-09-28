@@ -39,14 +39,20 @@ class Server:
             finally:
                 s2.close()
 
-    def send_header(self, client, name, value):
-        client.send('{}: {}\r\n'.format(name, value).encode())
+    def handle_client(self, socket):
+        client_handler = ClientHandler(socket, self.handlers)
+        request = client_handler.parse_request()
+        response = client_handler.handle_request(request)
+        client_handler.send_response(response)
 
-    def finish_headers(self, client):
-        client.send(b'\r\n')
 
-    def handle_client(self, client):
-        raw_request = client.recv(2048).decode().splitlines()
+class ClientHandler:
+    def __init__(self, socket, handlers):
+        self.socket = socket
+        self.handlers = handlers
+
+    def parse_request(self):
+        raw_request = self.socket.recv(2048).decode().splitlines()
         request = Request()
         first_line = raw_request.pop(0)
         # METHOD /path HTTP/version
@@ -56,29 +62,7 @@ class Server:
         request.headers = self.parse_headers(raw_request)
         request.body = '\n'.join(raw_request)
 
-        result = self.handle_request(request)
-
-        if isinstance(result, str):
-            code = 200
-            body = result
-        else:
-            code, body = result
-        body = body.encode()
-
-        code_name = {
-            200: 'OK',
-            201: 'Created',
-            404: 'Not Found'
-        }[code]
-
-        client.send('HTTP/1.0 {} {}\r\n'.format(code, code_name).encode())
-
-        self.send_header(client, 'Server', 'Simple HTTP server 0.1')
-        self.send_header(client, 'Content-Type', 'text/html')
-        self.send_header(client, 'Content-Length', len(body))
-
-        self.finish_headers(client)
-        client.send(body)
+        return request
 
     def parse_headers(self, raw_request):
         headers = dict()
@@ -96,6 +80,35 @@ class Server:
             if handler.can_handle(request):
                 return handler.handle(request)
         raise NoHandlerError()
+
+    def send_response(self, response):
+        if isinstance(response, str):
+            code = 200
+            body = response
+        else:
+            code, body = response
+        body = body.encode()
+
+        code_name = {
+            200: 'OK',
+            201: 'Created',
+            404: 'Not Found'
+        }[code]
+
+        self.socket.send('HTTP/1.0 {} {}\r\n'.format(code, code_name).encode())
+
+        self.send_header('Server', 'Simple HTTP server 0.1')
+        self.send_header('Content-Type', 'text/html')
+        self.send_header('Content-Length', len(body))
+
+        self.finish_headers()
+        self.socket.send(body)
+
+    def send_header(self, name, value):
+        self.socket.send('{}: {}\r\n'.format(name, value).encode())
+
+    def finish_headers(self):
+        self.socket.send(b'\r\n')
 
 class ToDo:
     def __init__(self):
