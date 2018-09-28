@@ -10,36 +10,79 @@ class Request:
     pass
 
 
+class Handler:
+    def can_handle(self, request):
+        return False
+
+    def handle(self, request):
+        raise RuntimeError("abstract")
+
+
 todo_list = []
+handlers = []
 
 
-def handle_request(request):
-    if request.path == '/':
+class RootHandler(Handler):
+    def can_handle(self, request):
+        return request.path == '/' and request.method == 'GET'
+
+    def handle(self, request):
         return '''
-        <html>
-            <head>
-                <title>To-do list</title>
-            </head>
-            <body>
-                <p>Your to-do list:</p>
-                <ul>
-                    {}
-                </ul>
-                <form action="/new" method="post">
-                    <p>Add a new item:</p>
-                    <input type="text" name="name" placeholder="Do stuff"/>
-                    <input type="submit" value="Add"/>
-                </form>
-            </body>
-        </html>'''.format('\n'.join('<li>' + item + '</li>' for item in todo_list))
+                <html>
+                    <head>
+                        <title>To-do list</title>
+                    </head>
+                    <body>
+                        <p>Your to-do list:</p>
+                        <ul>
+                            {}
+                        </ul>
+                        <form action="/new" method="post">
+                            <p>Add a new item:</p>
+                            <input type="text" name="name" placeholder="Do stuff"/>
+                            <input type="submit" value="Add"/>
+                        </form>
+                    </body>
+                </html>'''.format('\n'.join('<li>' + item + '</li>' for item in todo_list))
 
-    if request.path == '/new' and request.method == 'POST':
+
+handlers.append(RootHandler())
+
+
+class NewHandler(Handler):
+    def can_handle(self, request):
+        return request.path == '/new' and request.method == 'POST'
+
+    def handle(self, request):
         new_todo = request.body.strip()
         new_todo = new_todo[len("name="):].replace('+', ' ')
         todo_list.append(new_todo)
         return 201, '<html><body>Created! Go back to the <a href="/">frontpage</a>.</body></html>'
 
-    return 404, '<html><body><font color="red">Not Found</font></body></html>'
+
+handlers.append(NewHandler())
+
+
+class FourOhFourHandler(Handler):
+    def can_handle(self, request):
+        return True
+
+    def handle(self, request):
+        return 404, '<html><body><font color="red">Not Found</font></body></html>'
+
+
+handlers.append(FourOhFourHandler())
+
+
+class NoHandlerError(Exception):
+    pass
+
+
+def handle_request(request):
+    for handler in handlers:
+        if handler.can_handle(request):
+            return handler.handle(request)
+    raise NoHandlerError()
 
 
 def parse_headers(raw_request):
