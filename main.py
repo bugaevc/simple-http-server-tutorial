@@ -67,8 +67,10 @@ class Server:
             try:
                 self.handle_client(s2)
             except:
-                s2.send(b'HTTP/1.0 500 Internal Server Error\r\n')
-                s2.send(b'\r\n')
+                try:
+                    s2.send(b'HTTP/1.0 500 Internal Server Error\r\n\r\n')
+                except:
+                    pass  # the socket has died, do nothing
             finally:
                 s2.close()
 
